@@ -1,0 +1,333 @@
+// schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String        @id @default(uuid())
+  name           String
+  surname        String?
+  email          String        @unique
+  emailVerified  Boolean?
+  hashedPassword String?
+  image          String?
+  phoneNumber    String?
+  role           Role          @default(USER)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  posts          Post[]
+  savedPosts     SavedPost[]
+  chats          ChatUser[]
+  accounts       Account[]
+  sessions       Session[]
+  messages       Message[]
+  reservations   Reservation[]
+
+  @@map("users")
+}
+
+model Post {
+  id          String   @id @default(uuid())
+  title       String
+  price       Decimal  @db.Decimal(15, 2)
+  imageUrls   String[]
+  address     String
+  city        String
+  latitude    Decimal  @db.Decimal(18, 15)
+  longitude   Decimal  @db.Decimal(18, 15)
+  type        Type
+  property    Property
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+  views       Int      @default(0)
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  isArchive   Boolean  @default(false)
+
+  savedPosts SavedPost[]
+
+  apartment Apartment?
+  house     House?
+  landPlot  LandPlot?
+
+  rentalFeatures RentalFeatures?
+  saleFeatures   SaleFeatures?
+  reservations   Reservation[]
+
+  @@map("posts")
+}
+
+model Reservation {
+  id         String            @id @default(uuid())
+  userId     String
+  postId     String
+  startDate  DateTime
+  endDate    DateTime
+  totalPrice Decimal           @db.Decimal(15, 2)
+  status     ReservationStatus @default(PENDING)
+  createdAt  DateTime          @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("reservations")
+}
+
+model Apartment {
+  id                   String           @id @default(uuid())
+  numBedrooms          Int?
+  numBathrooms         Int?
+  apartmentArea        Float?
+  floorNumber          Int?
+  totalFloors          Int?
+  buildingType         BuildingType?
+  yearBuilt            Int?
+  ceilingHeight        Float?
+  hasBalcony           Boolean?
+  balconyType          String?
+  hasLoggia            Boolean?
+  hasWalkInCloset      Boolean?
+  hasPassengerElevator Boolean?
+  hasFreightElevator   Boolean?
+  heatingType          HeatingType?
+  renovationState      RenovationState?
+  parkingType          ParkingType?
+  furnished            Boolean?
+  internetSpeed        Int?
+  flooring             String?
+  soundproofing        Boolean?
+
+  post   Post   @relation(fields: [postId], references: [id])
+  postId String @unique
+
+  @@map("apartments")
+}
+
+model House {
+  id             String           @id @default(uuid())
+  numberOfFloors Int?
+  numberOfRooms  Int?
+  houseArea      Float?
+  landArea       Float?
+  wallMaterial   String?
+  yearBuilt      Int?
+  hasGarage      Boolean?
+  garageArea     Float?
+  hasBasement    Boolean?
+  basementArea   Float?
+  heatingType    HeatingType?
+  houseCondition RenovationState?
+  fencing        Boolean?
+  furnished      Boolean?
+  internetSpeed  Int?
+  flooring       String?
+  soundproofing  Boolean?
+
+  post   Post   @relation(fields: [postId], references: [id])
+  postId String @unique
+
+  @@map("houses")
+}
+
+model LandPlot {
+  id          String   @id @default(uuid())
+  landArea    Float?
+  landPurpose String?
+  waterSource String?
+  fencing     Boolean?
+
+  post   Post   @relation(fields: [postId], references: [id])
+  postId String @unique
+
+  @@map("land_plots")
+}
+
+model RentalFeatures {
+  id                        String            @id @default(uuid())
+  rentalTerm                RentalTerm?
+  securityDeposit           Decimal?          @db.Decimal(10, 2)
+  securityDepositConditions String?
+  utilitiesPayment          UtilitiesPayment?
+  utilitiesCost             Decimal?          @db.Decimal(10, 2)
+  leaseAgreementUrl         String?
+  petPolicy                 PetPolicy?
+  availabilityDate          DateTime?
+  minimumLeaseTerm          Int?
+  maximumLeaseTerm          Int?
+
+  post   Post   @relation(fields: [postId], references: [id])
+  postId String @unique
+
+  @@map("rental_features")
+}
+
+model SaleFeatures {
+  id                String    @id @default(uuid())
+  mortgageAvailable Boolean?
+  priceNegotiable   Boolean?
+  availabilityDate  DateTime?
+  titleDeedUrl      String?
+
+  post   Post   @relation(fields: [postId], references: [id])
+  postId String @unique
+
+  @@map("sale_features")
+}
+
+model SavedPost {
+  id      String   @id @default(uuid())
+  user    User     @relation(fields: [userId], references: [id])
+  post    Post     @relation(fields: [postId], references: [id])
+  userId  String
+  postId  String
+  savedAt DateTime @default(now())
+
+  @@unique([userId, postId])
+}
+
+model Chat {
+  id        String     @id @default(uuid())
+  createdAt DateTime   @default(now())
+  messages  Message[]
+  users     ChatUser[]
+}
+
+model ChatUser {
+  chatId String
+  userId String
+  chat   Chat   @relation(fields: [chatId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@id([chatId, userId])
+}
+
+model Message {
+  id          String   @id @default(uuid())
+  messageText String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  chat        Chat     @relation(fields: [chatId], references: [id])
+  chatId      String
+  sentAt      DateTime @default(now())
+}
+
+model Account {
+  id                String   @id @default(cuid())
+  userId            String   @map("user_id")
+  type              String?
+  provider          String
+  providerAccountId String   @map("provider_account_id")
+  token_type        String?
+  refresh_token     String?  @db.Text
+  access_token      String?  @db.Text
+  expires_at        Int?
+  scope             String?
+  id_token          String?  @db.Text
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String?  @map("user_id")
+  sessionToken String   @unique @map("session_token") @db.Text
+  accessToken  String?  @map("access_token") @db.Text
+  expires      DateTime
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("sessions")
+}
+
+model VerificationRequest {
+  id         String   @id @default(cuid())
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([identifier, token])
+}
+
+enum Type {
+  SALE
+  RENT
+}
+
+enum Property {
+  APARTMENT
+  HOUSE
+  LAND_PLOT
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum BuildingType {
+  PANEL
+  BRICK
+  MONOLITH
+  WOOD
+  OTHER
+}
+
+enum RenovationState {
+  NO_RENOVATION
+  COSMETIC
+  EURO
+  DESIGNER
+}
+
+enum HeatingType {
+  NONE
+  GAS
+  ELECTRIC
+  SOLAR
+  OTHER
+}
+
+enum ParkingType {
+  GARAGE
+  STREET
+  ASSIGNED
+  COVERED
+}
+
+enum PetPolicy {
+  NOT_ALLOWED
+  ALLOWED
+  ALLOWED_WITH_RESTRICTIONS
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum RentalTerm {
+  DAILY_PAYMENT
+  WEEKLY_PAYMENT
+  MONTHLY_PAYMENT
+}
+
+enum UtilitiesPayment {
+  INCLUDED
+  EXCLUDED
+  PARTIALLY_INCLUDED
+}

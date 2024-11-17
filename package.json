@@ -1,0 +1,26 @@
+{
+  "name": "socket-server",
+  "version": "1.0.0",
+  "description": "WebSocket server with Prisma and PostgreSQL",
+  "main": "server.js",
+  "scripts": {
+    "start": "prisma generate && node server.js"
+  },
+  "keywords": [
+    "websocket",
+    "socket.io",
+    "prisma",
+    "postgresql"
+  ],
+  "author": "ashurumaru",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "express": "^4.21.1",
+    "socket.io": "^4.8.1",
+    "uuid": "^11.0.3"
+  },
+  "devDependencies": {
+    "prisma": "^5.22.0"
+  }
+}
